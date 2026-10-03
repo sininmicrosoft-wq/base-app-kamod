@@ -42,6 +42,29 @@ class BaseViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     // Retrofit Live Telemetry
+    private val notificationManager = com.example.notification.GasAlertNotificationManager(application)
+
+    private val _gasAlertConfig = MutableStateFlow(
+        com.example.notification.GasAlertConfig(
+            isEnabled = true,
+            thresholdGwei = 0.0050,
+            cooldownSeconds = 60L
+        )
+    )
+    val gasAlertConfig: StateFlow<com.example.notification.GasAlertConfig> = _gasAlertConfig.asStateFlow()
+
+    private val _gasAlertHistory = MutableStateFlow<List<com.example.notification.GasAlertHistoryItem>>(
+        listOf(
+            com.example.notification.GasAlertHistoryItem(
+                gasPriceGwei = 0.0078,
+                thresholdGwei = 0.0050,
+                timestamp = System.currentTimeMillis() - 7200000,
+                network = "Base Mainnet"
+            )
+        )
+    )
+    val gasAlertHistory: StateFlow<List<com.example.notification.GasAlertHistoryItem>> = _gasAlertHistory.asStateFlow()
+
     private val _liveTelemetry = MutableStateFlow(
         com.example.data.remote.BaseLiveTelemetry(
             blockHeight = 24200840L,
@@ -167,6 +190,7 @@ class BaseViewModel(application: Application) : AndroidViewModel(application) {
                     // Fetch Retrofit Live Telemetry (Block height, gas price, transaction volume)
                     val liveResult = retrofitClient.fetchLiveTelemetry(currentNet.rpcUrl)
                     _liveTelemetry.value = liveResult
+                    checkGasThresholdAndNotify(liveResult.gasPriceGwei)
                 } catch (e: Exception) {
                     // Handled inside BaseRpcClient
                 }
@@ -182,6 +206,7 @@ class BaseViewModel(application: Application) : AndroidViewModel(application) {
             _telemetry.value = result
             val liveResult = retrofitClient.fetchLiveTelemetry(network.rpcUrl)
             _liveTelemetry.value = liveResult
+            checkGasThresholdAndNotify(liveResult.gasPriceGwei)
         }
     }
 
@@ -190,8 +215,72 @@ class BaseViewModel(application: Application) : AndroidViewModel(application) {
             _isTelemetryRefreshing.value = true
             val net = _selectedNetwork.value
             _telemetry.value = repository.getNetworkTelemetry(net.rpcUrl, net.chainId)
-            _liveTelemetry.value = retrofitClient.fetchLiveTelemetry(net.rpcUrl)
+            val liveResult = retrofitClient.fetchLiveTelemetry(net.rpcUrl)
+            _liveTelemetry.value = liveResult
+            checkGasThresholdAndNotify(liveResult.gasPriceGwei)
             _isTelemetryRefreshing.value = false
+        }
+    }
+
+    // Push Notification Gas Threshold Controls
+    fun setGasAlertThreshold(thresholdGwei: Double) {
+        _gasAlertConfig.value = _gasAlertConfig.value.copy(thresholdGwei = thresholdGwei)
+    }
+
+    fun setGasAlertEnabled(enabled: Boolean) {
+        _gasAlertConfig.value = _gasAlertConfig.value.copy(isEnabled = enabled)
+    }
+
+    fun triggerTestGasAlert(customGasPriceGwei: Double? = null): Boolean {
+        val cfg = _gasAlertConfig.value
+        val gasToReport = customGasPriceGwei ?: (cfg.thresholdGwei + 0.0028)
+        val net = _selectedNetwork.value.displayName
+        val fired = notificationManager.sendGasAlertNotification(
+            currentGasGwei = gasToReport,
+            thresholdGwei = cfg.thresholdGwei,
+            networkName = net
+        )
+        if (fired) {
+            val item = com.example.notification.GasAlertHistoryItem(
+                gasPriceGwei = gasToReport,
+                thresholdGwei = cfg.thresholdGwei,
+                network = net
+            )
+            _gasAlertHistory.value = listOf(item) + _gasAlertHistory.value
+            _gasAlertConfig.value = cfg.copy(
+                totalAlertsFired = cfg.totalAlertsFired + 1,
+                lastAlertTimestamp = System.currentTimeMillis()
+            )
+        }
+        return fired
+    }
+
+    private fun checkGasThresholdAndNotify(currentGasGwei: Double) {
+        val cfg = _gasAlertConfig.value
+        if (!cfg.isEnabled) return
+
+        val now = System.currentTimeMillis()
+        val elapsedSec = (now - cfg.lastAlertTimestamp) / 1000
+
+        if (currentGasGwei >= cfg.thresholdGwei && elapsedSec >= cfg.cooldownSeconds) {
+            val net = _selectedNetwork.value.displayName
+            val fired = notificationManager.sendGasAlertNotification(
+                currentGasGwei = currentGasGwei,
+                thresholdGwei = cfg.thresholdGwei,
+                networkName = net
+            )
+            if (fired) {
+                val item = com.example.notification.GasAlertHistoryItem(
+                    gasPriceGwei = currentGasGwei,
+                    thresholdGwei = cfg.thresholdGwei,
+                    network = net
+                )
+                _gasAlertHistory.value = listOf(item) + _gasAlertHistory.value
+                _gasAlertConfig.value = cfg.copy(
+                    totalAlertsFired = cfg.totalAlertsFired + 1,
+                    lastAlertTimestamp = now
+                )
+            }
         }
     }
 

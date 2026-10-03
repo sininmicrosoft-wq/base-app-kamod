@@ -66,6 +66,7 @@ import com.example.data.model.BaseNetwork
 import com.example.ui.BaseViewModel
 import com.example.ui.components.BaseGasTrendD3Chart
 import com.example.ui.components.BaseLiveTelemetryView
+import com.example.ui.components.GasAlertThresholdSettingsCard
 import com.example.ui.components.FlashblocksBadge
 import com.example.ui.theme.BaseAmber
 import com.example.ui.theme.BaseBlue
@@ -82,6 +83,8 @@ fun DashboardScreen(
     val telemetry by viewModel.telemetry.collectAsStateWithLifecycle()
     val liveTelemetry by viewModel.liveTelemetry.collectAsStateWithLifecycle()
     val isTelemetryRefreshing by viewModel.isTelemetryRefreshing.collectAsStateWithLifecycle()
+    val gasAlertConfig by viewModel.gasAlertConfig.collectAsStateWithLifecycle()
+    val gasAlertHistory by viewModel.gasAlertHistory.collectAsStateWithLifecycle()
     val network by viewModel.selectedNetwork.collectAsStateWithLifecycle()
     val tokens by viewModel.tokens.collectAsStateWithLifecycle()
     val transactions by viewModel.walletTransactions.collectAsStateWithLifecycle()
@@ -103,6 +106,18 @@ fun DashboardScreen(
                 telemetry = liveTelemetry,
                 isLoading = isTelemetryRefreshing,
                 onRefresh = { viewModel.refreshTelemetry() }
+            )
+        }
+
+        item {
+            // Push Notification Gas Threshold System Card
+            GasAlertThresholdSettingsCard(
+                config = gasAlertConfig,
+                history = gasAlertHistory,
+                currentGasPriceGwei = liveTelemetry.gasPriceGwei,
+                onThresholdChange = { viewModel.setGasAlertThreshold(it) },
+                onEnabledChange = { viewModel.setGasAlertEnabled(it) },
+                onTriggerTestAlert = { viewModel.triggerTestGasAlert() }
             )
         }
 
