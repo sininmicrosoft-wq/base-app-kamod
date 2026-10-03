@@ -62,6 +62,7 @@ import com.example.data.model.BaseNetwork
 import com.example.ui.BaseViewModel
 import com.example.ui.components.BaseGasTrendD3Chart
 import com.example.ui.components.BaseLiveTelemetryView
+import com.example.ui.components.BaseWalletBalanceCard
 import com.example.ui.components.VibenetFaucetCard
 import com.example.ui.theme.BaseAmber
 import com.example.ui.theme.BaseBlue
@@ -136,6 +137,19 @@ fun RpcPlaygroundScreen(
                     telemetry = liveTelemetry,
                     isLoading = isTelemetryRefreshing,
                     onRefresh = { viewModel.refreshTelemetry() }
+                )
+            }
+
+            // Native ETH Balance Lookup (Retrofit RPC)
+            item {
+                val balanceResult by viewModel.walletBalanceResult.collectAsStateWithLifecycle()
+                val isFetchingBalance by viewModel.isFetchingBalance.collectAsStateWithLifecycle()
+
+                BaseWalletBalanceCard(
+                    onFetchBalance = { addr, rpc -> viewModel.fetchWalletEthBalance(addr, rpc) },
+                    balanceResult = balanceResult,
+                    isLoading = isFetchingBalance,
+                    currentRpcUrl = network.rpcUrl
                 )
             }
 

@@ -119,5 +119,31 @@ class ExampleUnitTest {
     assertEquals(50.0, utilizationPct, 0.01)
     assertTrue(b20.memosEnabled)
   }
+
+  @Test
+  fun ethBalance_weiToEthConversion() {
+    val weiHex = "0x221b29270e060000" // 2.4576 ETH in hex
+    val weiBigInt = java.math.BigInteger(weiHex.removePrefix("0x"), 16)
+    val eth = weiBigInt.toDouble() / 1e18
+
+    assertEquals(2.4576, eth, 0.001)
+
+    val ethPriceUsd = 3450.0
+    val usd = eth * ethPriceUsd
+    assertEquals(8478.72, usd, 0.5)
+
+    val result = com.example.data.remote.WalletEthBalanceResult(
+      address = "0x71C84539820f4E71B20f92418a901f4c7849a290",
+      balanceWei = weiBigInt.toString(),
+      balanceEth = eth,
+      balanceUsd = usd,
+      rpcEndpoint = "https://mainnet.base.org",
+      latencyMs = 24L
+    )
+
+    assertTrue(result.isSuccess)
+    assertEquals("0x71C84539820f4E71B20f92418a901f4c7849a290", result.address)
+    assertEquals(2.4576, result.balanceEth, 0.001)
+  }
 }
 

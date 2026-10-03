@@ -234,6 +234,26 @@ class BaseViewModel(application: Application) : AndroidViewModel(application) {
     private val _isFaucetLoading = MutableStateFlow(false)
     val isFaucetLoading: StateFlow<Boolean> = _isFaucetLoading.asStateFlow()
 
+    // Native ETH Balance Lookup via Retrofit RPC
+    private val _walletBalanceResult = MutableStateFlow<com.example.data.remote.WalletEthBalanceResult?>(null)
+    val walletBalanceResult: StateFlow<com.example.data.remote.WalletEthBalanceResult?> = _walletBalanceResult.asStateFlow()
+
+    private val _isFetchingBalance = MutableStateFlow(false)
+    val isFetchingBalance: StateFlow<Boolean> = _isFetchingBalance.asStateFlow()
+
+    fun fetchWalletEthBalance(address: String, endpointUrl: String? = null) {
+        viewModelScope.launch {
+            _isFetchingBalance.value = true
+            val rpc = endpointUrl ?: _selectedNetwork.value.rpcUrl
+            try {
+                val res = retrofitClient.fetchNativeEthBalance(address, rpc)
+                _walletBalanceResult.value = res
+            } finally {
+                _isFetchingBalance.value = false
+            }
+        }
+    }
+
     suspend fun requestVibenetFaucet(address: String): com.example.data.remote.VibenetFaucetResult {
         _isFaucetLoading.value = true
         return try {
