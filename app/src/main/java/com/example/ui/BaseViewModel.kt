@@ -194,7 +194,7 @@ class BaseViewModel(application: Application) : AndroidViewModel(application) {
                 } catch (e: Exception) {
                     // Handled inside BaseRpcClient
                 }
-                delay(6000) // Poll every 6 seconds for new Base L2 blocks
+                delay(30_000L) // Poll every 30 seconds automatically
             }
         }
     }

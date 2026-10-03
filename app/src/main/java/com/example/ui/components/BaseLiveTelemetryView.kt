@@ -33,8 +33,11 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Http
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LocalGasStation
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -42,11 +45,14 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -63,6 +69,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.remote.BaseLiveTelemetry
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import com.example.ui.theme.BaseAmber
 import com.example.ui.theme.BaseBlue
 import com.example.ui.theme.BaseCyan
@@ -77,9 +85,27 @@ fun BaseLiveTelemetryView(
     telemetry: BaseLiveTelemetry,
     isLoading: Boolean = false,
     onRefresh: () -> Unit = {},
+    autoPollIntervalSeconds: Int = 30,
     modifier: Modifier = Modifier
 ) {
     var isExpanded by remember { mutableStateOf(false) }
+    var isAutoPollEnabled by remember { mutableStateOf(true) }
+    var secondsRemaining by remember { mutableIntStateOf(autoPollIntervalSeconds) }
+
+    // Automatic 30-second Polling Mechanism
+    LaunchedEffect(isAutoPollEnabled, autoPollIntervalSeconds) {
+        if (!isAutoPollEnabled) return@LaunchedEffect
+        secondsRemaining = autoPollIntervalSeconds
+        while (isActive) {
+            delay(1000L)
+            if (secondsRemaining > 1) {
+                secondsRemaining--
+            } else {
+                secondsRemaining = autoPollIntervalSeconds
+                onRefresh()
+            }
+        }
+    }
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val liveGlowAlpha by infiniteTransition.animateFloat(
@@ -126,7 +152,7 @@ fun BaseLiveTelemetryView(
                 )
                 .padding(18.dp)
         ) {
-            // Header: Live Badge + Protocol + Refresh
+            // Header: Live Badge + 30s Auto-Poll Pill + Protocol + Refresh
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -153,6 +179,41 @@ fun BaseLiveTelemetryView(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // 30-Second Auto-Poll Countdown Pill
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isAutoPollEnabled) BaseCyan.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+                        border = androidx.compose.foundation.BorderStroke(
+                            0.8.dp,
+                            if (isAutoPollEnabled) BaseCyan.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outline
+                        ),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { isAutoPollEnabled = !isAutoPollEnabled }
+                            .testTag("auto_poll_toggle_pill")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (isAutoPollEnabled) Icons.Default.Timer else Icons.Default.Pause,
+                                contentDescription = if (isAutoPollEnabled) "Auto-polling every 30s" else "Auto-polling paused",
+                                tint = if (isAutoPollEnabled) BaseCyan else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (isAutoPollEnabled) "30s (${secondsRemaining}s)" else "Auto: Off",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isAutoPollEnabled) BaseCyan else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
                     // Retrofit RPC indicator pill
                     Surface(
                         shape = RoundedCornerShape(8.dp),
@@ -171,7 +232,7 @@ fun BaseLiveTelemetryView(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Retrofit RPC",
+                                text = "RPC",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = BaseCyan
@@ -182,7 +243,10 @@ fun BaseLiveTelemetryView(
                     Spacer(modifier = Modifier.width(6.dp))
 
                     IconButton(
-                        onClick = onRefresh,
+                        onClick = {
+                            secondsRemaining = autoPollIntervalSeconds
+                            onRefresh()
+                        },
                         modifier = Modifier
                             .size(32.dp)
                             .testTag("telemetry_refresh_btn")
@@ -197,6 +261,20 @@ fun BaseLiveTelemetryView(
                         )
                     }
                 }
+            }
+
+            // Visual 30-Second Polling Progress Line
+            if (isAutoPollEnabled) {
+                Spacer(modifier = Modifier.height(8.dp))
+                LinearProgressIndicator(
+                    progress = { (autoPollIntervalSeconds - secondsRemaining).toFloat() / autoPollIntervalSeconds },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(2.5.dp)
+                        .clip(RoundedCornerShape(2.dp)),
+                    color = BaseCyan,
+                    trackColor = Color(0xFF1E293B)
+                )
             }
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -356,7 +434,10 @@ fun BaseLiveTelemetryView(
 
             // Prominent Manual On-Demand Refresh Button
             Button(
-                onClick = onRefresh,
+                onClick = {
+                    secondsRemaining = autoPollIntervalSeconds
+                    onRefresh()
+                },
                 enabled = !isLoading,
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -411,13 +492,13 @@ fun BaseLiveTelemetryView(
                     sdf.format(java.util.Date(telemetry.timestamp))
                 }
                 Text(
-                    text = "Last synced: $formattedTime",
+                    text = if (isAutoPollEnabled) "Last sync: $formattedTime • Next: ${secondsRemaining}s" else "Last sync: $formattedTime • Auto-poll: Off",
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = if (telemetry.isLive) "● Live Base RPC Connected" else "○ Local Simulation",
+                    text = if (telemetry.isLive) "● 30s Auto-Poll Active" else "○ Local Simulation",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
                     color = if (telemetry.isLive) BaseTeal else BaseAmber
