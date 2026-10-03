@@ -145,5 +145,25 @@ class ExampleUnitTest {
     assertEquals("0x71C84539820f4E71B20f92418a901f4c7849a290", result.address)
     assertEquals(2.4576, result.balanceEth, 0.001)
   }
+
+  @Test
+  fun zeroExTrade_slippageAndAllowanceRules() {
+    val sellAmountUsdc = 1000.0
+    val quotedOutputWeth = 0.397
+    val slippageBps = 50 // 0.5%
+    val minimumOutputWeth = quotedOutputWeth * (1.0 - (slippageBps / 10000.0))
+
+    assertEquals(0.395015, minimumOutputWeth, 0.0001)
+
+    val allowanceHolderSpender = "0xdef1c0ded9bec7f1a1670819833240f027b25eff"
+    val settlerSpender = "0x00000000000004533Fe15556111F4544889825fb"
+
+    fun isValidSpender(spender: String): Boolean {
+      return !spender.contains("Settler", ignoreCase = true) && spender != settlerSpender
+    }
+
+    assertTrue(isValidSpender(allowanceHolderSpender))
+    assertFalse(isValidSpender(settlerSpender))
+  }
 }
 

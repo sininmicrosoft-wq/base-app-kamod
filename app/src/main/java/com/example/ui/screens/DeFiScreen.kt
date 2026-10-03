@@ -65,6 +65,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.LendingMarket
 import com.example.data.model.YieldVault
 import com.example.ui.BaseViewModel
+import com.example.ui.components.DeFiInteractiveFlowView
+import com.example.ui.components.FlowKind
 import com.example.ui.theme.BaseAmber
 import com.example.ui.theme.BaseBlue
 import com.example.ui.theme.BaseCyan
@@ -130,19 +132,25 @@ fun DeFiScreen(
             Tab(
                 selected = selectedTab == 0,
                 onClick = { selectedTab = 0 },
-                text = { Text("Trading (Swap)", fontWeight = FontWeight.Bold, fontSize = 13.sp) },
+                text = { Text("Trading (0x)", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
                 modifier = Modifier.testTag("tab_swap")
             )
             Tab(
                 selected = selectedTab == 1,
                 onClick = { selectedTab = 1 },
-                text = { Text("Lend & Borrow", fontWeight = FontWeight.Bold, fontSize = 13.sp) },
-                modifier = Modifier.testTag("tab_lending")
+                text = { Text("DeFi Demo", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
+                modifier = Modifier.testTag("tab_defi_demo")
             )
             Tab(
                 selected = selectedTab == 2,
                 onClick = { selectedTab = 2 },
-                text = { Text("Earn Vaults", fontWeight = FontWeight.Bold, fontSize = 13.sp) },
+                text = { Text("Lend & Borrow", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
+                modifier = Modifier.testTag("tab_lending")
+            )
+            Tab(
+                selected = selectedTab == 3,
+                onClick = { selectedTab = 3 },
+                text = { Text("Earn Vaults", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
                 modifier = Modifier.testTag("tab_vaults")
             )
         }
@@ -155,7 +163,20 @@ fun DeFiScreen(
         ) {
             when (selectedTab) {
                 0 -> {
-                    // SWAP / TRADING TAB
+                    // SWAP / TRADING TAB with 0x Swap API simulation
+                    item {
+                        DeFiInteractiveFlowView(initialFlow = FlowKind.TRADE)
+                    }
+
+                    item {
+                        Text(
+                            text = "Execute AMM & Orderbook Swap",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
                     item {
                         SwapView(
                             tokens = tokens,
@@ -188,6 +209,13 @@ fun DeFiScreen(
                 }
 
                 1 -> {
+                    // Base Documentation DeFi Demo Runner (Trade, Lend, Borrow, Earn)
+                    item {
+                        DeFiInteractiveFlowView(initialFlow = FlowKind.TRADE)
+                    }
+                }
+
+                2 -> {
                     // LENDING & BORROWING TAB
                     item {
                         Card(
@@ -303,7 +331,7 @@ fun DeFiScreen(
                     }
                 }
 
-                2 -> {
+                3 -> {
                     // EARN VAULTS TAB
                     item {
                         Card(
