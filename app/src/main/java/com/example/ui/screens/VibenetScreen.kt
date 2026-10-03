@@ -119,6 +119,7 @@ data class WsEventLog(
 fun VibenetScreen(
     viewModel: BaseViewModel,
     onBack: () -> Unit,
+    onOpenMonitor: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     BackHandler(onBack = onBack)
@@ -838,6 +839,19 @@ fun VibenetScreen(
                                         modifier = Modifier.padding(10.dp),
                                         lineHeight = 15.sp
                                     )
+                                }
+
+                                Spacer(modifier = Modifier.height(14.dp))
+
+                                Button(
+                                    onClick = onOpenMonitor,
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = BaseCyan),
+                                    modifier = Modifier.fillMaxWidth().height(46.dp).testTag("open_live_monitor_btn")
+                                ) {
+                                    Icon(imageVector = Icons.Default.Speed, contentDescription = null, tint = Color.Black, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Launch Live WebSocket Monitor Dashboard", fontWeight = FontWeight.Bold, color = Color.Black, fontSize = 12.sp)
                                 }
 
                                 Spacer(modifier = Modifier.height(14.dp))

@@ -522,4 +522,18 @@ class BaseViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
     }
+
+    // Vibenet Real-time WebSocket Client
+    val vibenetWsClient = com.example.data.remote.VibenetWebSocketClient(
+        scope = viewModelScope,
+        endpointUrl = "wss://rpc.vibes.base.org/ws"
+    )
+
+    fun connectVibenetWs() = vibenetWsClient.connect()
+    fun disconnectVibenetWs() = vibenetWsClient.disconnect()
+
+    override fun onCleared() {
+        super.onCleared()
+        vibenetWsClient.disconnect()
+    }
 }

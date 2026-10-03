@@ -72,5 +72,27 @@ class ExampleUnitTest {
     assertEquals(0.5, result.amountEth, 0.001)
     assertTrue(result.txHash.startsWith("0x"))
   }
+
+  @Test
+  fun vibenetBlockHeader_dataModelValid() {
+    val header = com.example.data.remote.VibenetBlockHeader(
+      blockNumber = 1048590L,
+      blockNumberHex = "0x10007e",
+      hash = "0x8453abcdef0123456789",
+      parentHash = "0x8453prev0123456789",
+      gasUsed = 125000L,
+      gasLimit = 30000000L,
+      baseFeeGwei = 0.0042,
+      timestamp = System.currentTimeMillis(),
+      latencyMs = 202L,
+      rawJson = "{\"jsonrpc\":\"2.0\"}"
+    )
+
+    assertEquals(1048590L, header.blockNumber)
+    assertEquals("0x10007e", header.blockNumberHex)
+    assertTrue(header.gasUsed < header.gasLimit)
+    assertTrue(header.latencyMs in 150L..350L)
+    assertTrue(header.hash.startsWith("0x"))
+  }
 }
 
