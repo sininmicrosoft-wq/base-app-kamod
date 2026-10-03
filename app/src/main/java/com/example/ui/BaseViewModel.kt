@@ -227,6 +227,24 @@ class BaseViewModel(application: Application) : AndroidViewModel(application) {
         _gasAlertConfig.value = _gasAlertConfig.value.copy(thresholdGwei = thresholdGwei)
     }
 
+    // Vibenet Faucet Integration
+    private val _faucetHistory = MutableStateFlow<List<com.example.data.remote.VibenetFaucetResult>>(emptyList())
+    val faucetHistory: StateFlow<List<com.example.data.remote.VibenetFaucetResult>> = _faucetHistory.asStateFlow()
+
+    private val _isFaucetLoading = MutableStateFlow(false)
+    val isFaucetLoading: StateFlow<Boolean> = _isFaucetLoading.asStateFlow()
+
+    suspend fun requestVibenetFaucet(address: String): com.example.data.remote.VibenetFaucetResult {
+        _isFaucetLoading.value = true
+        return try {
+            val result = retrofitClient.requestVibenetFaucetDrip(address)
+            _faucetHistory.value = listOf(result) + _faucetHistory.value
+            result
+        } finally {
+            _isFaucetLoading.value = false
+        }
+    }
+
     fun setGasAlertEnabled(enabled: Boolean) {
         _gasAlertConfig.value = _gasAlertConfig.value.copy(isEnabled = enabled)
     }

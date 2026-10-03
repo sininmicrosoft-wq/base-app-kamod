@@ -40,5 +40,37 @@ class ExampleUnitTest {
     assertEquals(200, vibenet.blockTimeMs)
     assertTrue(vibenet.isTestnet)
   }
+
+  @Test
+  fun vibenetFaucet_addressValidation() {
+    val validAddress = "0x71C84539820f4E71B20f92418a901f4c7849a290"
+    val invalidShort = "0x1234"
+    val invalidNoPrefix = "71C84539820f4E71B20f92418a901f4c7849a290"
+    val invalidChars = "0xZZZ84539820f4E71B20f92418a901f4c7849a290"
+
+    fun isValid(addr: String): Boolean {
+      val trimmed = addr.trim()
+      return trimmed.startsWith("0x") && trimmed.length == 42 && trimmed.drop(2).all { it in "0123456789abcdefABCDEF" }
+    }
+
+    assertTrue(isValid(validAddress))
+    assertFalse(isValid(invalidShort))
+    assertFalse(isValid(invalidNoPrefix))
+    assertFalse(isValid(invalidChars))
+  }
+
+  @Test
+  fun vibenetFaucet_resultModel() {
+    val result = com.example.data.remote.VibenetFaucetResult(
+      isSuccess = true,
+      recipientAddress = "0x71C84539820f4E71B20f92418a901f4c7849a290",
+      amountEth = 0.5,
+      txHash = "0x8453abcdef123456",
+      message = "Drip confirmed"
+    )
+    assertTrue(result.isSuccess)
+    assertEquals(0.5, result.amountEth, 0.001)
+    assertTrue(result.txHash.startsWith("0x"))
+  }
 }
 

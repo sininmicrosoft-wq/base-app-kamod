@@ -58,9 +58,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.data.model.BaseNetwork
 import com.example.ui.BaseViewModel
 import com.example.ui.components.BaseGasTrendD3Chart
 import com.example.ui.components.BaseLiveTelemetryView
+import com.example.ui.components.VibenetFaucetCard
 import com.example.ui.theme.BaseAmber
 import com.example.ui.theme.BaseBlue
 import com.example.ui.theme.BaseCyan
@@ -406,6 +408,18 @@ contract BaseB20Asset is ERC20 {
                         }
                     }
                 }
+            }
+
+            // Vibenet Faucet Card
+            item {
+                val isFaucetLoading by viewModel.isFaucetLoading.collectAsStateWithLifecycle()
+                val faucetHistory by viewModel.faucetHistory.collectAsStateWithLifecycle()
+
+                VibenetFaucetCard(
+                    onRequestFaucet = { address -> viewModel.requestVibenetFaucet(address) },
+                    isLoading = isFaucetLoading,
+                    history = faucetHistory
+                )
             }
 
             item { Spacer(modifier = Modifier.height(40.dp)) }

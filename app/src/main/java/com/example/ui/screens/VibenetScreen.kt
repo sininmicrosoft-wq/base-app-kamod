@@ -87,6 +87,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.BaseNetwork
 import com.example.ui.BaseViewModel
+import com.example.ui.components.VibenetFaucetCard
 import com.example.ui.theme.BaseAmber
 import com.example.ui.theme.BaseBlue
 import com.example.ui.theme.BaseCyan
@@ -125,6 +126,8 @@ fun VibenetScreen(
     val context = LocalContext.current
     val clipboardManager: ClipboardManager = LocalClipboardManager.current
     val selectedNetwork by viewModel.selectedNetwork.collectAsStateWithLifecycle()
+    val isFaucetLoading by viewModel.isFaucetLoading.collectAsStateWithLifecycle()
+    val faucetHistory by viewModel.faucetHistory.collectAsStateWithLifecycle()
 
     var activeTab by remember { mutableIntStateOf(0) }
     var copiedBanner by remember { mutableStateOf<String?>(null) }
@@ -788,129 +791,14 @@ fun VibenetScreen(
                 }
 
                 3 -> {
-                    // TAB 3: Get Testnet ETH Faucet
+                    // TAB 3: Get Testnet ETH Faucet Composable
                     item {
-                        Card(
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            border = androidx.compose.foundation.BorderStroke(1.2.dp, BaseCyan.copy(alpha = 0.5f)),
-                            modifier = Modifier.fillMaxWidth().testTag("vibenet_faucet_card")
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(imageVector = Icons.Default.AccountBalanceWallet, contentDescription = null, tint = BaseCyan, modifier = Modifier.size(22.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Column {
-                                        Text(
-                                            text = "Vibenet Testnet ETH Faucet",
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(
-                                            text = "Request testnet ETH for gas via web or programmatic drip",
-                                            fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(14.dp))
-
-                                OutlinedTextField(
-                                    value = faucetRecipient,
-                                    onValueChange = { faucetRecipient = it },
-                                    label = { Text("Recipient EVM Address") },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = BaseCyan,
-                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                    )
-                                )
-
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                Button(
-                                    onClick = { isFaucetDripping = true },
-                                    enabled = !isFaucetDripping && faucetRecipient.isNotBlank(),
-                                    shape = RoundedCornerShape(10.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = BaseCyan),
-                                    modifier = Modifier.fillMaxWidth().testTag("drip_faucet_btn")
-                                ) {
-                                    if (isFaucetDripping) {
-                                        CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Dripping Testnet ETH via API...", color = Color.Black)
-                                    } else {
-                                        Text("Drip 0.5 Vibenet ETH", fontWeight = FontWeight.Bold, color = Color.Black)
-                                    }
-                                }
-
-                                LaunchedEffect(isFaucetDripping) {
-                                    if (isFaucetDripping) {
-                                        delay(1500)
-                                        faucetSuccessReceipt = "Dripped 0.5 Vibenet ETH to ${faucetRecipient.take(10)}...! Tx: 0x${(100000..999999).random()}...drip"
-                                        isFaucetDripping = false
-                                    }
-                                }
-
-                                faucetSuccessReceipt?.let { msg ->
-                                    Spacer(modifier = Modifier.height(10.dp))
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = BaseTeal.copy(alpha = 0.15f),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = BaseTeal, modifier = Modifier.size(16.dp))
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(msg, fontSize = 11.sp, color = BaseTeal, fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                // Programmatic cURL snippet from documentation
-                                Text("Programmatic cURL Drip", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.height(6.dp))
-
-                                val curlSnippet = """
-curl -X POST https://api.vibes.base.org/api/vibenet/faucet/drip \
-  -H "content-type: application/json" \
-  -d '{"address":"$faucetRecipient"}'
-                                """.trimIndent()
-
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = Color(0xFF0F172A),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(12.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.Top
-                                    ) {
-                                        Text(
-                                            text = curlSnippet,
-                                            fontSize = 11.sp,
-                                            fontFamily = FontFamily.Monospace,
-                                            color = BaseCyan,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        IconButton(
-                                            onClick = {
-                                                clipboardManager.setText(AnnotatedString(curlSnippet))
-                                                copiedBanner = "Copied cURL command!"
-                                            },
-                                            modifier = Modifier.size(24.dp)
-                                        ) {
-                                            Icon(imageVector = Icons.Default.ContentCopy, contentDescription = "Copy", tint = Color.White, modifier = Modifier.size(14.dp))
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        VibenetFaucetCard(
+                            onRequestFaucet = { address -> viewModel.requestVibenetFaucet(address) },
+                            isLoading = isFaucetLoading,
+                            defaultAddress = defaultAddress,
+                            history = faucetHistory
+                        )
                     }
                 }
 
