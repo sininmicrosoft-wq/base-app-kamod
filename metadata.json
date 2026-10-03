@@ -1,0 +1,6 @@
+{
+  "name": "Base",
+  "description": "Build financial products on Base: DeFi integration, RWA asset tokenization, stablecoins, payment lifecycle, and private transactions with live network telemetry.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
