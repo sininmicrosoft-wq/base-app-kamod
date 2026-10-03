@@ -51,6 +51,7 @@ import com.example.ui.screens.PrivateLedgerScreen
 import com.example.ui.screens.RpcPlaygroundScreen
 import com.example.ui.screens.RwaScreen
 import com.example.ui.screens.StablecoinScreen
+import com.example.ui.screens.VibenetScreen
 import com.example.ui.theme.BaseBlue
 import com.example.ui.theme.BaseCyan
 import com.example.ui.theme.MyApplicationTheme
@@ -184,6 +185,12 @@ fun BaseApp(viewModel: BaseViewModel = viewModel()) {
                 }
                 "rpc" -> {
                     RpcPlaygroundScreen(
+                        viewModel = viewModel,
+                        onBack = { currentScreen = "dashboard" }
+                    )
+                }
+                "vibenet" -> {
+                    VibenetScreen(
                         viewModel = viewModel,
                         onBack = { currentScreen = "dashboard" }
                     )

@@ -29,5 +29,16 @@ class ExampleUnitTest {
     val shouldNotify = config.isEnabled && (spikeGas >= config.thresholdGwei)
     assertFalse(shouldNotify)
   }
+
+  @Test
+  fun vibenetNetwork_specificationsValid() {
+    val vibenet = com.example.data.model.BaseNetwork.VIBENET
+    assertEquals(84538453L, vibenet.chainId)
+    assertEquals("https://rpc.vibes.base.org", vibenet.rpcUrl)
+    assertEquals("wss://rpc.vibes.base.org/ws", vibenet.wsUrl)
+    assertEquals("https://chain.base.org/vibenet/explorer", vibenet.explorerUrl)
+    assertEquals(200, vibenet.blockTimeMs)
+    assertTrue(vibenet.isTestnet)
+  }
 }
 
