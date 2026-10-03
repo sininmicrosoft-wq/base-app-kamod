@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.BaseViewModel
+import com.example.ui.components.BaseLiveTelemetryView
 import com.example.ui.theme.BaseAmber
 import com.example.ui.theme.BaseBlue
 import com.example.ui.theme.BaseCyan
@@ -73,6 +74,8 @@ fun RpcPlaygroundScreen(
     val network by viewModel.selectedNetwork.collectAsStateWithLifecycle()
     val rpcResult by viewModel.rpcConsoleResult.collectAsStateWithLifecycle()
     val isRpcLoading by viewModel.isRpcLoading.collectAsStateWithLifecycle()
+    val liveTelemetry by viewModel.liveTelemetry.collectAsStateWithLifecycle()
+    val isTelemetryRefreshing by viewModel.isTelemetryRefreshing.collectAsStateWithLifecycle()
     val clipboardManager: ClipboardManager = LocalClipboardManager.current
 
     var selectedMethod by remember { mutableStateOf("eth_blockNumber") }
@@ -124,6 +127,15 @@ fun RpcPlaygroundScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Live Retrofit Telemetry with On-Demand Manual Refresh Button
+            item {
+                BaseLiveTelemetryView(
+                    telemetry = liveTelemetry,
+                    isLoading = isTelemetryRefreshing,
+                    onRefresh = { viewModel.refreshTelemetry() }
+                )
+            }
+
             // Flashblocks Spec Card
             item {
                 Card(

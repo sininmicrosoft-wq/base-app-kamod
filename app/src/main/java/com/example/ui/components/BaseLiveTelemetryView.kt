@@ -35,6 +35,8 @@ import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -348,6 +350,78 @@ fun BaseLiveTelemetryView(
                         DetailRow(label = "JSON-RPC Protocol", value = "eth_getBlockByNumber (latest)")
                     }
                 }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Prominent Manual On-Demand Refresh Button
+            Button(
+                onClick = onRefresh,
+                enabled = !isLoading,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = BaseBlue,
+                    disabledContainerColor = BaseBlue.copy(alpha = 0.5f)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .testTag("manual_refresh_telemetry_btn")
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Fetching Latest Base RPC Telemetry...",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Refresh",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Fetch Latest Telemetry (On Demand)",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Last Updated Timestamp & Sync Status
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val formattedTime = remember(telemetry.timestamp) {
+                    val sdf = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+                    sdf.format(java.util.Date(telemetry.timestamp))
+                }
+                Text(
+                    text = "Last synced: $formattedTime",
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = if (telemetry.isLive) "● Live Base RPC Connected" else "○ Local Simulation",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = if (telemetry.isLive) BaseTeal else BaseAmber
+                )
             }
         }
     }
