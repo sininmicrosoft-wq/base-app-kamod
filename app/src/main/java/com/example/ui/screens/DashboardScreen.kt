@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.BaseNetwork
 import com.example.ui.BaseViewModel
+import com.example.ui.components.BaseGasTrendD3Chart
 import com.example.ui.components.BaseLiveTelemetryView
 import com.example.ui.components.FlashblocksBadge
 import com.example.ui.theme.BaseAmber
@@ -103,6 +104,11 @@ fun DashboardScreen(
                 isLoading = isTelemetryRefreshing,
                 onRefresh = { viewModel.refreshTelemetry() }
             )
+        }
+
+        item {
+            // D3 24h Gas Price Trend Spline Line Chart
+            BaseGasTrendD3Chart()
         }
 
         // Smart Wallet & Account Abstraction Card

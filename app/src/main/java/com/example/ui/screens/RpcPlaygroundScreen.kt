@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.BaseViewModel
+import com.example.ui.components.BaseGasTrendD3Chart
 import com.example.ui.components.BaseLiveTelemetryView
 import com.example.ui.theme.BaseAmber
 import com.example.ui.theme.BaseBlue
@@ -134,6 +135,11 @@ fun RpcPlaygroundScreen(
                     isLoading = isTelemetryRefreshing,
                     onRefresh = { viewModel.refreshTelemetry() }
                 )
+            }
+
+            // D3 24h Gas Price Trend Spline Line Chart
+            item {
+                BaseGasTrendD3Chart()
             }
 
             // Flashblocks Spec Card
