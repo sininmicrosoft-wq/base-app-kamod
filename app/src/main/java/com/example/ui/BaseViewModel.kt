@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 class BaseViewModel(application: Application) : AndroidViewModel(application) {
     private val db = BaseDatabase.getDatabase(application)
     private val rpcClient = BaseRpcClient()
+    private val retrofitClient = com.example.data.remote.BaseRetrofitClient()
     private val repository = BaseRepository(
         invoiceDao = db.invoiceDao(),
         assetDao = db.assetDao(),
@@ -39,6 +40,26 @@ class BaseViewModel(application: Application) : AndroidViewModel(application) {
         walletTxDao = db.walletTxDao(),
         rpcClient = rpcClient
     )
+
+    // Retrofit Live Telemetry
+    private val _liveTelemetry = MutableStateFlow(
+        com.example.data.remote.BaseLiveTelemetry(
+            blockHeight = 24200840L,
+            gasPriceGwei = 0.0042,
+            gasPriceUsd = 0.00064,
+            blockTxVolume = 172,
+            estimatedTps = 86.0,
+            gasUsedHex = "0x1bfa30",
+            blockHash = "0x892a...4b12",
+            latencyMs = 54,
+            rpcEndpoint = "https://mainnet.base.org",
+            isLive = true
+        )
+    )
+    val liveTelemetry: StateFlow<com.example.data.remote.BaseLiveTelemetry> = _liveTelemetry.asStateFlow()
+
+    private val _isTelemetryRefreshing = MutableStateFlow(false)
+    val isTelemetryRefreshing: StateFlow<Boolean> = _isTelemetryRefreshing.asStateFlow()
 
     // Network & Telemetry
     private val _selectedNetwork = MutableStateFlow(BaseNetwork.MAINNET)
@@ -142,6 +163,10 @@ class BaseViewModel(application: Application) : AndroidViewModel(application) {
                     val currentNet = _selectedNetwork.value
                     val result = repository.getNetworkTelemetry(currentNet.rpcUrl, currentNet.chainId)
                     _telemetry.value = result
+
+                    // Fetch Retrofit Live Telemetry (Block height, gas price, transaction volume)
+                    val liveResult = retrofitClient.fetchLiveTelemetry(currentNet.rpcUrl)
+                    _liveTelemetry.value = liveResult
                 } catch (e: Exception) {
                     // Handled inside BaseRpcClient
                 }
@@ -155,13 +180,18 @@ class BaseViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val result = repository.getNetworkTelemetry(network.rpcUrl, network.chainId)
             _telemetry.value = result
+            val liveResult = retrofitClient.fetchLiveTelemetry(network.rpcUrl)
+            _liveTelemetry.value = liveResult
         }
     }
 
     fun refreshTelemetry() {
         viewModelScope.launch {
+            _isTelemetryRefreshing.value = true
             val net = _selectedNetwork.value
             _telemetry.value = repository.getNetworkTelemetry(net.rpcUrl, net.chainId)
+            _liveTelemetry.value = retrofitClient.fetchLiveTelemetry(net.rpcUrl)
+            _isTelemetryRefreshing.value = false
         }
     }
 

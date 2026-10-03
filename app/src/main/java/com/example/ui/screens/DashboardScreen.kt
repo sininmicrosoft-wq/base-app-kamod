@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.BaseNetwork
 import com.example.ui.BaseViewModel
+import com.example.ui.components.BaseLiveTelemetryView
 import com.example.ui.components.FlashblocksBadge
 import com.example.ui.theme.BaseAmber
 import com.example.ui.theme.BaseBlue
@@ -78,6 +79,8 @@ fun DashboardScreen(
     modifier: Modifier = Modifier
 ) {
     val telemetry by viewModel.telemetry.collectAsStateWithLifecycle()
+    val liveTelemetry by viewModel.liveTelemetry.collectAsStateWithLifecycle()
+    val isTelemetryRefreshing by viewModel.isTelemetryRefreshing.collectAsStateWithLifecycle()
     val network by viewModel.selectedNetwork.collectAsStateWithLifecycle()
     val tokens by viewModel.tokens.collectAsStateWithLifecycle()
     val transactions by viewModel.walletTransactions.collectAsStateWithLifecycle()
@@ -94,59 +97,12 @@ fun DashboardScreen(
     ) {
         item {
             Spacer(modifier = Modifier.height(4.dp))
-            // Telemetry Banner (Live Gas, Block, Flashblocks)
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                ),
-                shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                modifier = Modifier.fillMaxWidth().testTag("telemetry_card")
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "Base L2 Network Telemetry",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                        FlashblocksBadge(subSecondMs = telemetry.flashblockSubSecondLatencyMs)
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        TelemetryMetric(
-                            label = "L2 Gas Price",
-                            value = "${String.format("%.4f", telemetry.gasPriceGwei)} Gwei",
-                            subtext = "<$0.001 per tx",
-                            tint = BaseCyan
-                        )
-                        TelemetryMetric(
-                            label = "Block Latency",
-                            value = "${telemetry.latencyMs} ms",
-                            subtext = if (telemetry.isLive) "Direct JSON-RPC" else "Cached Ping",
-                            tint = if (telemetry.isLive) BaseTeal else BaseAmber
-                        )
-                        TelemetryMetric(
-                            label = "L1 Blob Fee",
-                            value = "EIP-4844",
-                            subtext = "Ultra-low cost",
-                            tint = BaseBlue
-                        )
-                    }
-                }
-            }
+            // Retrofit Base Live Telemetry: Block Height, Gas Price, Tx Volume
+            BaseLiveTelemetryView(
+                telemetry = liveTelemetry,
+                isLoading = isTelemetryRefreshing,
+                onRefresh = { viewModel.refreshTelemetry() }
+            )
         }
 
         // Smart Wallet & Account Abstraction Card
