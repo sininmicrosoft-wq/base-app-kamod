@@ -110,7 +110,9 @@ class BaseRepository(
         category: String,
         valuation: Double,
         supply: Long,
-        dividendYield: Double
+        dividendYield: Double,
+        supplyCap: Long = (supply * 1.5).toLong().coerceAtLeast(supply),
+        holderCount: Int = 1
     ): Long {
         val price = if (supply > 0) valuation / supply.toDouble() else 1.0
         val asset = B20Asset(
@@ -119,6 +121,8 @@ class BaseRepository(
             assetCategory = category,
             totalValuationUsd = valuation,
             totalSupply = supply,
+            supplyCap = supplyCap,
+            holderCount = holderCount,
             pricePerToken = price,
             dividendYieldPct = dividendYield
         )

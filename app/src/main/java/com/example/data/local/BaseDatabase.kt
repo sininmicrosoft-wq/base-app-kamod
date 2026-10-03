@@ -18,7 +18,7 @@ import com.example.data.model.WalletTransaction
         PrivateTransaction::class,
         WalletTransaction::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class BaseDatabase : RoomDatabase() {

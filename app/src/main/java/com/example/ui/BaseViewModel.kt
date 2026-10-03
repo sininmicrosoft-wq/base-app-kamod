@@ -322,16 +322,29 @@ class BaseViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // RWA Tokenization actions
+    private val _isFetchingB20Assets = MutableStateFlow(false)
+    val isFetchingB20Assets: StateFlow<Boolean> = _isFetchingB20Assets.asStateFlow()
+
+    fun refreshB20Assets() {
+        viewModelScope.launch {
+            _isFetchingB20Assets.value = true
+            delay(750)
+            _isFetchingB20Assets.value = false
+        }
+    }
+
     fun issueB20Asset(
         name: String,
         symbol: String,
         category: String,
         valuation: Double,
         supply: Long,
-        dividendYield: Double
+        dividendYield: Double,
+        supplyCap: Long = (supply * 1.5).toLong().coerceAtLeast(supply),
+        holderCount: Int = 1
     ) {
         viewModelScope.launch {
-            repository.issueB20Asset(name, symbol, category, valuation, supply, dividendYield)
+            repository.issueB20Asset(name, symbol, category, valuation, supply, dividendYield, supplyCap, holderCount)
         }
     }
 
@@ -486,13 +499,59 @@ class BaseViewModel(application: Application) : AndroidViewModel(application) {
                     assetCategory = "Treasury Bills",
                     totalValuationUsd = 15000000.00,
                     totalSupply = 150000,
+                    supplyCap = 300000,
+                    holderCount = 428,
                     pricePerToken = 100.00,
                     kycRequired = true,
                     accreditedOnly = false,
                     transferRestricted = true,
+                    memosEnabled = true,
+                    network = "Base Vibenet",
                     dividendYieldPct = 5.18,
                     custodian = "Coinbase Prime & BNY Mellon",
                     totalDistributedUsd = 194250.00
+                )
+            )
+
+            db.assetDao().insertAsset(
+                B20Asset(
+                    name = "Base Commercial Paper Prime Yield",
+                    symbol = "bCP-USD",
+                    assetCategory = "Private Credit",
+                    totalValuationUsd = 12500000.00,
+                    totalSupply = 12500000,
+                    supplyCap = 25000000,
+                    holderCount = 1842,
+                    pricePerToken = 1.00,
+                    kycRequired = true,
+                    accreditedOnly = true,
+                    transferRestricted = true,
+                    memosEnabled = true,
+                    network = "Base Vibenet",
+                    dividendYieldPct = 6.45,
+                    custodian = "Superfluid Capital & Securitize",
+                    totalDistributedUsd = 80625.00
+                )
+            )
+
+            db.assetDao().insertAsset(
+                B20Asset(
+                    name = "Vibenet High-Yield Debt Note",
+                    symbol = "vDEBT",
+                    assetCategory = "Corporate Bonds",
+                    totalValuationUsd = 5000000.00,
+                    totalSupply = 5000000,
+                    supplyCap = 10000000,
+                    holderCount = 634,
+                    pricePerToken = 1.00,
+                    kycRequired = true,
+                    accreditedOnly = false,
+                    transferRestricted = true,
+                    memosEnabled = true,
+                    network = "Base Vibenet",
+                    dividendYieldPct = 7.10,
+                    custodian = "Anchorage Digital Bank",
+                    totalDistributedUsd = 29500.00
                 )
             )
 

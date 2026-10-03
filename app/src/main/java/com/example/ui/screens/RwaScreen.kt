@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.B20Asset
 import com.example.ui.BaseViewModel
+import com.example.ui.components.B20AssetDirectoryView
 import com.example.ui.theme.BaseAmber
 import com.example.ui.theme.BaseBlue
 import com.example.ui.theme.BaseCyan
@@ -75,6 +76,8 @@ fun RwaScreen(
     modifier: Modifier = Modifier
 ) {
     val assets by viewModel.assets.collectAsStateWithLifecycle()
+    val isFetchingAssets by viewModel.isFetchingB20Assets.collectAsStateWithLifecycle()
+    val network by viewModel.selectedNetwork.collectAsStateWithLifecycle()
     var showIssueDialog by remember { mutableStateOf(false) }
     var distributionSuccessMessage by remember { mutableStateOf<String?>(null) }
     val clipboardManager: ClipboardManager = LocalClipboardManager.current
@@ -175,25 +178,15 @@ fun RwaScreen(
             }
 
             item {
-                Text(
-                    text = "B20 Asset Registry",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-
-            items(assets) { asset ->
-                B20AssetCard(
-                    asset = asset,
-                    onDistribute = {
+                B20AssetDirectoryView(
+                    assets = assets,
+                    isRefreshing = isFetchingAssets,
+                    onRefresh = { viewModel.refreshB20Assets() },
+                    networkName = network.displayName,
+                    onAssetClick = { asset ->
                         val monthlyYield = (asset.totalValuationUsd * (asset.dividendYieldPct / 100.0)) / 12.0
                         viewModel.distributeDividends(asset, monthlyYield)
                         distributionSuccessMessage = "Distributed $${String.format("%,.2f", monthlyYield)} USDC dividend to ${asset.symbol} holders!"
-                    },
-                    onCopyContract = {
-                        clipboardManager.setText(AnnotatedString(asset.contractAddress))
                     }
                 )
             }
@@ -205,8 +198,8 @@ fun RwaScreen(
     if (showIssueDialog) {
         IssueB20Dialog(
             onDismiss = { showIssueDialog = false },
-            onIssue = { name, symbol, cat, valUsd, supply, yieldPct ->
-                viewModel.issueB20Asset(name, symbol, cat, valUsd, supply, yieldPct)
+            onIssue = { name, symbol, cat, valUsd, supply, yieldPct, cap, holders ->
+                viewModel.issueB20Asset(name, symbol, cat, valUsd, supply, yieldPct, cap, holders)
                 showIssueDialog = false
             }
         )
@@ -353,13 +346,15 @@ fun ComplianceBadge(label: String, active: Boolean) {
 @Composable
 fun IssueB20Dialog(
     onDismiss: () -> Unit,
-    onIssue: (name: String, symbol: String, category: String, valUsd: Double, supply: Long, yieldPct: Double) -> Unit
+    onIssue: (name: String, symbol: String, category: String, valUsd: Double, supply: Long, yieldPct: Double, supplyCap: Long, holderCount: Int) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var symbol by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Treasury Bills") }
     var valuationText by remember { mutableStateOf("10000000") }
     var supplyText by remember { mutableStateOf("100000") }
+    var supplyCapText by remember { mutableStateOf("250000") }
+    var holderCountText by remember { mutableStateOf("142") }
     var yieldText by remember { mutableStateOf("5.25") }
 
     AlertDialog(
@@ -381,20 +376,38 @@ fun IssueB20Dialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().testTag("input_b20_symbol")
                 )
-                OutlinedTextField(
-                    value = valuationText,
-                    onValueChange = { valuationText = it },
-                    label = { Text("Total Asset Valuation ($)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().testTag("input_b20_valuation")
-                )
-                OutlinedTextField(
-                    value = supplyText,
-                    onValueChange = { supplyText = it },
-                    label = { Text("Total Token Supply") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().testTag("input_b20_supply")
-                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = supplyText,
+                        onValueChange = { supplyText = it },
+                        label = { Text("Initial Mint Supply") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f).testTag("input_b20_supply")
+                    )
+                    OutlinedTextField(
+                        value = supplyCapText,
+                        onValueChange = { supplyCapText = it },
+                        label = { Text("Max Supply Cap") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f).testTag("input_b20_cap")
+                    )
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = valuationText,
+                        onValueChange = { valuationText = it },
+                        label = { Text("Valuation ($)") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f).testTag("input_b20_valuation")
+                    )
+                    OutlinedTextField(
+                        value = holderCountText,
+                        onValueChange = { holderCountText = it },
+                        label = { Text("Initial Holders") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f).testTag("input_b20_holders")
+                    )
+                }
                 OutlinedTextField(
                     value = yieldText,
                     onValueChange = { yieldText = it },
@@ -409,8 +422,19 @@ fun IssueB20Dialog(
                 onClick = {
                     val valUsd = valuationText.toDoubleOrNull() ?: 1000000.0
                     val supply = supplyText.toLongOrNull() ?: 10000L
+                    val cap = supplyCapText.toLongOrNull() ?: (supply * 2)
+                    val holders = holderCountText.toIntOrNull() ?: 1
                     val yield = yieldText.toDoubleOrNull() ?: 5.0
-                    onIssue(name.ifEmpty { "Tokenized Real Asset" }, symbol.ifEmpty { "RWA" }, category, valUsd, supply, yield)
+                    onIssue(
+                        name.ifEmpty { "Tokenized Real Asset" },
+                        symbol.ifEmpty { "RWA" },
+                        category,
+                        valUsd,
+                        supply,
+                        yield,
+                        cap.coerceAtLeast(supply),
+                        holders
+                    )
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = BaseAmber),
                 modifier = Modifier.testTag("submit_issue_b20_btn")

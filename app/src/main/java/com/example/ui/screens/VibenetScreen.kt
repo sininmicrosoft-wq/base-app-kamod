@@ -87,6 +87,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.BaseNetwork
 import com.example.ui.BaseViewModel
+import com.example.ui.components.B20AssetDirectoryView
 import com.example.ui.components.VibenetFaucetCard
 import com.example.ui.theme.BaseAmber
 import com.example.ui.theme.BaseBlue
@@ -129,6 +130,8 @@ fun VibenetScreen(
     val selectedNetwork by viewModel.selectedNetwork.collectAsStateWithLifecycle()
     val isFaucetLoading by viewModel.isFaucetLoading.collectAsStateWithLifecycle()
     val faucetHistory by viewModel.faucetHistory.collectAsStateWithLifecycle()
+    val assets by viewModel.assets.collectAsStateWithLifecycle()
+    val isFetchingAssets by viewModel.isFetchingB20Assets.collectAsStateWithLifecycle()
 
     var activeTab by remember { mutableIntStateOf(0) }
     var copiedBanner by remember { mutableStateOf<String?>(null) }
@@ -788,6 +791,16 @@ fun VibenetScreen(
                                 }
                             }
                         }
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        B20AssetDirectoryView(
+                            assets = assets,
+                            isRefreshing = isFetchingAssets,
+                            onRefresh = { viewModel.refreshB20Assets() },
+                            networkName = "Base Vibenet"
+                        )
                     }
                 }
 

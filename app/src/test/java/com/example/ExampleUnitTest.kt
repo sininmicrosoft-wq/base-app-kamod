@@ -94,5 +94,30 @@ class ExampleUnitTest {
     assertTrue(header.latencyMs in 150L..350L)
     assertTrue(header.hash.startsWith("0x"))
   }
+
+  @Test
+  fun b20Asset_supplyCapAndHolderCountValid() {
+    val b20 = com.example.data.model.B20Asset(
+      name = "Base Commercial Paper Prime Yield",
+      symbol = "bCP-USD",
+      assetCategory = "Private Credit",
+      totalValuationUsd = 12500000.0,
+      totalSupply = 12500000L,
+      supplyCap = 25000000L,
+      holderCount = 1842,
+      pricePerToken = 1.0,
+      memosEnabled = true,
+      network = "Base Vibenet"
+    )
+
+    assertEquals(12500000L, b20.totalSupply)
+    assertEquals(25000000L, b20.supplyCap)
+    assertEquals(1842, b20.holderCount)
+    assertTrue(b20.supplyCap >= b20.totalSupply)
+
+    val utilizationPct = (b20.totalSupply.toDouble() / b20.supplyCap.toDouble()) * 100.0
+    assertEquals(50.0, utilizationPct, 0.01)
+    assertTrue(b20.memosEnabled)
+  }
 }
 
